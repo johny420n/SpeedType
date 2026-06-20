@@ -823,6 +823,7 @@
     // weighted by accuracy SQUARED so clean vs sloppy separates sharply, plus a clean-run bonus
     var coins = Math.round((Math.min(wpm, 140) * 6 + sent.length * 2) * acc * acc);
     if (state.errors === 0) coins += 60;
+    coins = Math.round(coins * (1 + state.level * 0.25)); // each harder (later) level pays progressively more
     coins = Math.max(10, coins);
     var stars = (state.errors === 0 && wpm >= 22) ? 3 : (state.errors <= 2 ? 2 : 1);
     ding();
