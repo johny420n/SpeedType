@@ -80,6 +80,7 @@
 
   var SAVE_KEY = 'ryanRacer_v1';
   var PLAYER = 'Ryan';
+  var UNLOCK_STEP = 2000; // coins for "1 amazing pass"; level N unlocks at N×this (≈1 great / 3 good / 5 weak runs)
   var TOUCH = !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches); // phone/tablet → use the device's own keyboard
 
   // ---- state ----
@@ -88,7 +89,7 @@
     started: false, startTime: null, wrong: false,
     results: [], advancing: false, toast: null,
     soundOn: true, showKb: true,
-    save: { boards: {}, lastName: PLAYER, misses: {}, cleared: {} },
+    save: { boards: {}, lastName: PLAYER, misses: {}, cleared: {}, bank: 0 },
     runMisses: {},
     lastTotal: 0, lastStars: 0, lastWpm: 0, lastPaces: null, newHigh: false, prevRecord: null,
     scoreSaved: false, newRank: -1, countdown: false, resetLevel: -1
@@ -98,17 +99,23 @@
     if (raw) {
       var loaded = JSON.parse(raw);
       if (loaded && loaded.boards) {
-        state.save = { boards: loaded.boards || {}, lastName: loaded.lastName || PLAYER, misses: loaded.misses || {}, cleared: loaded.cleared || {} };
+        state.save = { boards: loaded.boards || {}, lastName: loaded.lastName || PLAYER, misses: loaded.misses || {}, cleared: loaded.cleared || {}, bank: loaded.bank };
       } else if (loaded && loaded.hs) {
         // migrate older single-best save into per-level leaderboards
         var mb = {};
         Object.keys(loaded.hs).forEach(function (k) {
           mb[k] = [{ name: PLAYER, coins: loaded.hs[k] || 0, stars: (loaded.st && loaded.st[k]) || 1 }];
         });
-        state.save = { boards: mb, lastName: PLAYER, misses: {}, cleared: {} };
+        state.save = { boards: mb, lastName: PLAYER, misses: {}, cleared: {}, bank: null };
       }
     }
   } catch (e) {}
+  // seed the coin bank for saves from before coin-gated unlocking, so already-earned levels stay open
+  if (state.save.bank == null) {
+    var seedTops = 0, seedHigh = -1;
+    for (var sk = 0; sk < LEVELS.length; sk++) { var st0 = (state.save.boards[sk] || [])[0]; if (st0) { seedTops += st0.coins || 0; seedHigh = sk; } }
+    state.save.bank = Math.max(seedTops, (seedHigh + 1) * UNLOCK_STEP);
+  }
 
   var app = document.getElementById('app');
 
@@ -239,7 +246,7 @@
   function board(i) { return state.save.boards[i] || []; }
   function topEntry(i) { return board(i)[0] || null; }
   function clearedLvl(i) { return !!(state.save.cleared && state.save.cleared[i]) || board(i).length > 0; }
-  function unlocked(i) { return i === 0 || (LEVELS[i] && LEVELS[i].free) || clearedLvl(i - 1); }
+  function unlocked(i) { return i === 0 || (LEVELS[i] && LEVELS[i].free) || (state.save.bank || 0) >= i * UNLOCK_STEP; }
   function starStr(n) { n = n || 0; return '★★★☆☆☆'.slice(3 - n, 6 - n); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function keyLabel(ch) { return ch === ' ' ? 'space' : ch; }
@@ -338,7 +345,7 @@
   }
 
   function buildHome() {
-    var totalCoins = LEVELS.reduce(function (a, L, i) { var t = topEntry(i); return a + (t ? t.coins : 0); }, 0);
+    var totalCoins = state.save.bank || 0; // lifetime coins collected — this is what unlocks levels
     var misses = state.save.misses || {};
     var mkeys = topMisses(misses, 8);
     var troublePanel = mkeys.length
@@ -354,7 +361,7 @@
       var base = "position:relative;cursor:pointer;text-align:left;font-family:Fredoka,sans-serif;background:#1f242d;border:1px solid #313845;border-radius:18px;padding:18px;box-shadow:0 6px 0 #14171d;width:100%;";
       var diffStyle = "background:" + L.col + "22;color:" + L.col + ";";
       var lock = locked
-        ? '<div style="position:absolute;inset:0;border-radius:18px;background:rgba(17,20,25,.72);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;"><span style="font-size:30px;">🔒</span><span style="font-size:13px;font-weight:600;color:#9aa2b1;">Win Level ' + (i + 1) + ' to unlock</span></div>'
+        ? '<div style="position:absolute;inset:0;border-radius:18px;background:rgba(17,20,25,.74);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:10px;text-align:center;"><span style="font-size:28px;">🔒</span><span style="font-size:15px;font-weight:700;color:#f3f5f8;">' + (state.save.bank || 0) + ' / ' + (i * UNLOCK_STEP) + ' 🪙</span><span style="font-size:11px;font-weight:600;color:#9aa2b1;letter-spacing:.5px;">collect coins to unlock</span></div>'
         : '';
       var bestLine = top
         ? '🪙 ' + top.coins + ' <span style="color:#7d8696;font-weight:600;">· ' + esc(top.name) + '</span>'
@@ -637,7 +644,7 @@
     var doneCoins = state.lastTotal;
     var doneStars = starStr(state.lastStars);
     var newHigh = state.newHigh;
-    var hasNext = lvl < 8;
+    var hasNext = lvl < 8 && unlocked(lvl + 1);
     var top = topEntry(lvl);
     var doneBest = top ? top.coins : 0;
 
@@ -870,7 +877,7 @@
     var rank = list.indexOf(entry);
     boards[lvl] = list;
     var cleared = {}; for (var ck in state.save.cleared) cleared[ck] = state.save.cleared[ck]; cleared[lvl] = true;
-    var save = { boards: boards, lastName: name, misses: state.save.misses || {}, cleared: cleared };
+    var save = { boards: boards, lastName: name, misses: state.save.misses || {}, cleared: cleared, bank: (state.save.bank || 0) + state.lastTotal };
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
     ding();
     setState({ save: save, scoreSaved: true, newRank: rank });
@@ -885,7 +892,7 @@
   function resetLevelBoard(lvl) {
     var boards = cloneBoards(state.save.boards);
     delete boards[lvl]; // wipe this track's scores, but keep 'cleared' so the next track stays unlocked
-    var save = { boards: boards, lastName: state.save.lastName, misses: state.save.misses || {}, cleared: state.save.cleared || {} };
+    var save = { boards: boards, lastName: state.save.lastName, misses: state.save.misses || {}, cleared: state.save.cleared || {}, bank: state.save.bank || 0 };
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
     setState({ save: save, resetLevel: -1, newRank: -1 });
   }
@@ -951,8 +958,9 @@
       ensureSaved();
       start(state.level);
     } else if (a === 'next') {
-      ensureSaved();
-      start(Math.min(8, state.level + 1));
+      ensureSaved(); // banks this run's coins first (which may itself unlock the next level)
+      var nx = Math.min(8, state.level + 1);
+      if (unlocked(nx)) start(nx); else setState({ screen: 'home', countdown: false });
     }
   });
 
