@@ -314,8 +314,8 @@
   // ---- rendering ----
   var mountedScreen = null, mountedSub = null;
   var refs = {}, charEls = [], keyEls = [], toastShown = false;
-  var ghostCps = 0, ghostPaces = null, ghostName = ''; // record holder's pace for the ghost car
-  function ghostOn() { return !!(ghostPaces || ghostCps > 0); }
+  var ghosts = []; // up to 3 rival cars (top-3 local records) to race against
+  function ghostOn() { return ghosts.length > 0; }
 
   function setState(patch) { for (var k in patch) state[k] = patch[k]; render(); }
 
@@ -423,6 +423,18 @@
         + '<div id="st-bulb-' + bc + '-1" style="' + BULB_OFF + '"></div>'
         + '</div>';
     }
+    // race lanes: the player plus up to 3 rival cars, each in its own horizontal lane
+    var K = 1 + ghosts.length, lane = function (ci) { return ((ci + 0.5) / K * 100).toFixed(1); };
+    var ghostCars = '';
+    for (var gv = 0; gv < ghosts.length; gv++) {
+      ghostCars += '<div id="st-ghost-' + gv + '" style="position:absolute;top:' + lane(gv + 1) + '%;font-size:26px;transform:translateY(-50%);transition:left .2s linear;left:calc(0% );filter:' + ghosts[gv].filter + ';opacity:.92;z-index:1;">🏎️</div>';
+    }
+    var ghostLegend = ghosts.length
+      ? '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:6px;font-size:11px;font-weight:700;color:#9aa2b1;">'
+        + '<span><span style="color:#ff4438;">●</span> You</span>'
+        + ghosts.map(function (g) { return '<span><span style="color:' + g.tag + ';">●</span> ' + esc(g.name) + '</span>'; }).join('')
+        + '</div>'
+      : '';
     app.innerHTML =
       '<div style="position:relative;display:flex;flex-direction:column;min-height:' + (TOUCH ? 'auto' : '100vh') + ';padding:' + (TOUCH ? '12px 14px 16px' : '18px 22px 22px') + ';max-width:1240px;margin:0 auto;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'
@@ -440,14 +452,14 @@
       +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px 14px;text-align:center;min-width:78px;"><div id="st-coins" style="font-size:20px;font-weight:700;color:#ffd60a;line-height:1;">🪙 0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">COINS</div></div>'
       +   '</div>'
       + '</div>'
-      + '<div style="position:relative;margin-top:18px;height:64px;border-radius:16px;background:#23262d;border:1px solid #313845;overflow:hidden;">'
+      + '<div style="position:relative;margin-top:16px;height:96px;border-radius:16px;background:#23262d;border:1px solid #313845;overflow:hidden;">'
       +   '<div style="position:absolute;top:50%;left:0;right:0;height:4px;transform:translateY(-50%);background:repeating-linear-gradient(90deg,#4a5160 0 22px,transparent 22px 44px);"></div>'
       +   '<div style="position:absolute;top:0;bottom:0;right:0;width:26px;background:repeating-conic-gradient(#e9edf3 0 25%,#1b1e24 0 50%) 0 0/13px 13px;"></div>'
-      +   '<div id="st-ghost" style="position:absolute;top:50%;font-size:30px;transform:translateY(-50%);transition:left .2s linear;left:calc(0% );filter:hue-rotate(115deg) saturate(1.5);opacity:.9;' + (ghostOn() ? '' : 'display:none;') + '">🏎️</div>'
-      +   '<div id="st-ghost-tag" style="position:absolute;top:4px;left:10px;font-size:10px;font-weight:700;letter-spacing:.5px;color:#c2c9d4;background:rgba(12,14,18,.55);padding:2px 8px;border-radius:7px;' + (ghostOn() ? '' : 'display:none;') + '">🟢 ' + esc(ghostName) + '\'s record</div>'
-      +   '<div id="st-car" style="position:absolute;top:50%;font-size:34px;animation:stbob 1s ease-in-out infinite;transition:left .18s cubic-bezier(.2,.8,.3,1);left:calc(0% );transform:translateY(-50%);z-index:2;">🏎️</div>'
+      +   ghostCars
+      +   '<div id="st-car" style="position:absolute;top:' + lane(0) + '%;font-size:28px;animation:stbob 1s ease-in-out infinite;transition:left .18s cubic-bezier(.2,.8,.3,1);left:calc(0% );transform:translateY(-50%);z-index:3;">🏎️</div>'
       +   '<div id="st-flag" style="position:absolute;top:50%;right:22px;transform:translateY(-50%);font-size:34px;opacity:0;transition:opacity .15s;z-index:6;">🏁</div>'
       + '</div>'
+      + ghostLegend
       + '<div style="position:relative;display:flex;justify-content:center;' + (TOUCH ? 'flex:none;align-items:flex-start;padding:16px 6px 8px;' : 'flex:1;align-items:center;padding:24px 6px;') + '">'
       +   '<div id="st-lights" style="position:absolute;top:2px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:8px;z-index:8;pointer-events:none;">'
       +     '<div id="st-fingers" style="font-family:Fredoka,sans-serif;font-size:clamp(14px,2.2vw,20px);font-weight:700;color:#ffd60a;text-shadow:0 2px 6px rgba(0,0,0,.55);">⌨️ Fingers to the starting line!</div>'
@@ -488,13 +500,14 @@
       go: document.getElementById('st-go'),
       fingers: document.getElementById('st-fingers'),
       flag: document.getElementById('st-flag'),
-      ghost: document.getElementById('st-ghost'),
       input: document.getElementById('st-input'),
+      ghosts: [],
       bulbs: []
     };
     for (var bi = 0; bi < 5; bi++) {
       refs.bulbs[bi] = [document.getElementById('st-bulb-' + bi + '-0'), document.getElementById('st-bulb-' + bi + '-1')];
     }
+    for (var gq = 0; gq < ghosts.length; gq++) refs.ghosts.push(document.getElementById('st-ghost-' + gq));
     toastShown = false;
     if (state.showKb && !TOUCH) buildKeyboard();
   }
@@ -550,11 +563,15 @@
     refs.timer.textContent = el.toFixed(1);
     refs.wpm.textContent = (state.started && el > 0.4) ? Math.round((state.pos / 5) / (el / 60)) : 0;
     refs.coins.textContent = '🪙 ' + state.results.reduce(function (a, r) { return a + r.coins; }, 0);
-    if (refs.ghost && ghostOn()) {
-      var gcps = ghostPaces ? (ghostPaces[state.sub] || 0) : ghostCps; // this sentence's recorded pace
+    if (refs.ghosts && refs.ghosts.length) {
       var glen = cur().length;
-      var gpct = (glen > 0 && gcps > 0) ? Math.min((el * gcps / glen) * 100, 94) : 0;
-      refs.ghost.style.left = 'calc(' + gpct + '% )';
+      for (var gi = 0; gi < ghosts.length; gi++) {
+        if (!refs.ghosts[gi]) continue;
+        var gob = ghosts[gi];
+        var gcps = gob.paces ? (gob.paces[state.sub] || 0) : gob.cps; // this sentence's recorded pace
+        var gpct = (glen > 0 && gcps > 0) ? Math.min((el * gcps / glen) * 100, 94) : 0;
+        refs.ghosts[gi].style.left = 'calc(' + gpct + '% )';
+      }
     }
   }
 
@@ -870,10 +887,20 @@
     clearCountdown();
     clearPlayTimers();
     stopMusic();
-    var rec = topEntry(idx);                                  // race the current record holder's ghost
-    ghostName = rec ? rec.name : '';
-    ghostPaces = (rec && rec.paces && rec.paces.length === 10) ? rec.paces : null; // per-sentence pace
-    ghostCps = (rec && rec.wpm) ? (rec.wpm * 5 / 60) : 0;     // fallback for older records without splits
+    ghosts = [];                                             // race the top-3 local record holders
+    var GPAL = [
+      { filter: 'hue-rotate(50deg) saturate(1.7)',  tag: '#ffd60a' },  // 1st = yellow
+      { filter: 'hue-rotate(210deg) saturate(1.7)', tag: '#5aa9ff' },  // 2nd = blue
+      { filter: 'hue-rotate(120deg) saturate(1.6)', tag: '#3ddc84' }   // 3rd = green
+    ];
+    var top3 = board(idx).slice(0, 3);
+    for (var gr = 0; gr < top3.length; gr++) {
+      var ge = top3[gr];
+      var gp = (ge.paces && ge.paces.length === 10) ? ge.paces : null;          // per-sentence pace
+      var gc = ge.wpm ? (ge.wpm * 5 / 60) : 0;                                   // fallback for old records
+      if (!gp && !gc) continue;                                                  // no pace data -> skip
+      ghosts.push({ name: ge.name, paces: gp, cps: gc, filter: GPAL[gr].filter, tag: GPAL[gr].tag });
+    }
     var a = ac(); if (a && a.state === 'suspended') a.resume(); // unlock/resume audio inside the click gesture
     state.runMisses = {};
     setState({ screen: 'play', level: idx, sub: 0, pos: 0, errors: 0, started: false, startTime: null, results: [], advancing: false, toast: null, wrong: false, scoreSaved: false, newRank: -1, countdown: true, resetLevel: -1 });
