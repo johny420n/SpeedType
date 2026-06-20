@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Speed Typer — Ryan's Racing School</title>
 <meta name="description" content="A fun offline typing game for kids — race to type fast and accurately.">
 <meta name="theme-color" content="#181b22">
@@ -390,7 +390,7 @@
     }).join('');
 
     app.innerHTML =
-      '<div style="position:relative;max-width:1120px;margin:0 auto;padding:38px 28px 70px;">'
+      '<div style="position:relative;max-width:1120px;margin:0 auto;padding:max(clamp(20px,5vw,38px),env(safe-area-inset-top)) clamp(14px,4vw,28px) 70px;">'
       + '<div style="height:14px;width:100%;background:repeating-linear-gradient(45deg,#23272f 0 12px,#2f343d 12px 24px);border-radius:8px;animation:stcheck 1.4s linear infinite;background-size:60px 100%;opacity:.55;"></div>'
       + '<div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:18px;margin-top:26px;">'
       +   '<div>'
@@ -436,7 +436,7 @@
         + '</div>'
       : '';
     app.innerHTML =
-      '<div style="position:relative;display:flex;flex-direction:column;min-height:' + (TOUCH ? 'auto' : '100vh') + ';padding:' + (TOUCH ? '12px 14px 16px' : '18px 22px 22px') + ';max-width:1240px;margin:0 auto;">'
+      '<div style="position:relative;display:flex;flex-direction:column;min-height:' + (TOUCH ? 'auto' : '100vh') + ';padding:' + (TOUCH ? 'max(12px,env(safe-area-inset-top)) clamp(10px,3.5vw,14px) 16px' : '18px clamp(12px,2.5vw,22px) 22px') + ';max-width:1240px;margin:0 auto;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'
       +   '<div style="display:flex;gap:8px;align-items:center;">'
       +     '<button data-action="home" style="cursor:pointer;background:#1f242d;border:1px solid #313845;border-radius:12px;padding:9px 16px;color:#b9c0cd;font-family:Fredoka,sans-serif;font-weight:600;font-size:14px;">← Garage</button>'
@@ -447,9 +447,9 @@
       +     '<div style="font-size:13px;color:#8b93a3;font-weight:600;">Sentence <span id="st-subnum">1</span> of 10</div>'
       +   '</div>'
       +   '<div style="display:flex;gap:10px;">'
-      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px 14px;text-align:center;min-width:78px;"><div id="st-timer" style="font-size:20px;font-weight:700;color:#7ee0ff;line-height:1;">0.0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">SECONDS</div></div>'
-      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px 14px;text-align:center;min-width:78px;"><div id="st-wpm" style="font-size:20px;font-weight:700;color:#3ddc84;line-height:1;">0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">WPM</div></div>'
-      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px 14px;text-align:center;min-width:78px;"><div id="st-coins" style="font-size:20px;font-weight:700;color:#ffd60a;line-height:1;">🪙 0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">COINS</div></div>'
+      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px clamp(8px,2.2vw,14px);text-align:center;min-width:clamp(56px,15vw,78px);"><div id="st-timer" style="font-size:20px;font-weight:700;color:#7ee0ff;line-height:1;">0.0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">SECONDS</div></div>'
+      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px clamp(8px,2.2vw,14px);text-align:center;min-width:clamp(56px,15vw,78px);"><div id="st-wpm" style="font-size:20px;font-weight:700;color:#3ddc84;line-height:1;">0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">WPM</div></div>'
+      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px clamp(8px,2.2vw,14px);text-align:center;min-width:clamp(56px,15vw,78px);"><div id="st-coins" style="font-size:20px;font-weight:700;color:#ffd60a;line-height:1;">🪙 0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">COINS</div></div>'
       +   '</div>'
       + '</div>'
       + '<div style="position:relative;margin-top:16px;height:96px;border-radius:16px;background:#23262d;border:1px solid #313845;overflow:hidden;">'
@@ -468,7 +468,7 @@
       +   '</div>'
       +   '<div id="st-sentence" style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;column-gap:0;row-gap:16px;max-width:1040px;"></div>'
       + '</div>'
-      + (state.showKb && !TOUCH ? '<div id="st-keyboard" style="display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px;background:#1b1e24;border:1px solid #2a2f39;border-radius:16px;"></div>'
+      + (state.showKb && !TOUCH ? '<div id="st-keyboard" style="display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px;background:#1b1e24;border:1px solid #2a2f39;border-radius:16px;max-width:100%;overflow-x:auto;"></div>'
           + '<div style="display:flex;justify-content:center;gap:18px;margin-top:8px;font-size:12px;font-weight:600;color:#8b93a3;">'
           +   '<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ff4438;margin-right:6px;vertical-align:middle;"></span>Left hand</span>'
           +   '<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#2b8bff;margin-right:6px;vertical-align:middle;"></span>Right hand</span>'
@@ -717,7 +717,7 @@
 
     app.innerHTML =
       '<div style="position:relative;min-height:' + (TOUCH ? 'auto' : '100vh') + ';display:flex;align-items:' + (TOUCH ? 'flex-start' : 'center') + ';justify-content:center;padding:' + (TOUCH ? '16px 14px 28px' : '30px') + ';">'
-      + '<div style="position:relative;width:100%;max-width:520px;background:#1f242d;border:1px solid #313845;border-radius:24px;padding:34px 30px;text-align:center;box-shadow:0 14px 0 #14171d;">'
+      + '<div style="position:relative;width:100%;max-width:520px;background:#1f242d;border:1px solid #313845;border-radius:24px;padding:clamp(22px,5vw,34px) clamp(18px,5vw,30px);text-align:center;box-shadow:0 14px 0 #14171d;">'
       +   confetti
       +   '<div style="font-size:58px;line-height:1;">'
       +     '<span style="display:inline-block;animation:stwave2 .6s ease-in-out infinite;">🏁</span>'
