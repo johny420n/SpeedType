@@ -1,5 +1,5 @@
 // Service worker for Speed Typer — caches the app shell so it works fully offline.
-const CACHE = 'speed-typer-v12';
+const CACHE = 'speed-typer-v13';
 const CORE = [
   './index.html',
   './manifest.webmanifest',

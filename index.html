@@ -248,6 +248,8 @@
   function clearedLvl(i) { return !!(state.save.cleared && state.save.cleared[i]) || board(i).length > 0; }
   function unlocked(i) { return i === 0 || (LEVELS[i] && LEVELS[i].free) || (state.save.bank || 0) >= i * UNLOCK_STEP; }
   function starStr(n) { n = n || 0; return '★★★☆☆☆'.slice(3 - n, 6 - n); }
+  function ordinal(n) { return n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'); }
+  function placeMsg(p) { var m = p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '🏁'; return m + " You're " + ordinal(p) + '!'; }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function keyLabel(ch) { return ch === ' ' ? 'space' : ch; }
   function topMisses(map, n) {
@@ -625,6 +627,7 @@
       refs.toastStars.textContent = state.toast.stars;
       refs.toastCoins.textContent = state.toast.coins;
       refs.toastMsg.textContent = state.toast.msg;
+      refs.toastMsg.style.color = (state.toast.place === 1) ? '#ffd60a' : '#b9c0cd';
       refs.toast.style.display = 'flex';
       var inner = refs.toastInner;
       inner.style.animation = 'none';
@@ -809,7 +812,8 @@
 
   function finishSentence(startTime) {
     var sent = cur();
-    var elapsed = Math.max(0.5, (Date.now() - startTime) / 1000);
+    var realSecs = (Date.now() - startTime) / 1000;
+    var elapsed = Math.max(0.5, realSecs);
     var wpm = Math.round((sent.length / 5) / (elapsed / 60));
     var acc = sent.length / (sent.length + state.errors);
     // wide scale: speed is the main lever (capped high to bound burst-abuse) + stage length,
@@ -820,10 +824,17 @@
     var stars = (state.errors === 0 && wpm >= 22) ? 3 : (state.errors <= 2 ? 2 : 1);
     ding();
     var results = state.results.concat([{ coins: coins, stars: stars, wpm: wpm, secs: elapsed, chars: sent.length }]);
+    // finishing position vs the rival cars that already ran this stage
+    var place = 1;
+    for (var gp = 0; gp < ghosts.length; gp++) {
+      var gcps = ghosts[gp].paces ? (ghosts[gp].paces[state.sub] || 0) : ghosts[gp].cps;
+      if (gcps > 0 && (sent.length / gcps) < realSecs) place++; // this rival crossed the line before you
+    }
     var msgs = ['Nice driving!', 'Speedy!', 'Vroom vroom!', 'Great lap!', 'You rock!', 'Turbo!'];
+    var msg = ghosts.length > 0 ? placeMsg(place) : msgs[Math.floor(Math.random() * msgs.length)];
     setState({
       results: results, advancing: true,
-      toast: { coins: coins, stars: '⭐'.repeat(stars), msg: msgs[Math.floor(Math.random() * msgs.length)] }
+      toast: { coins: coins, stars: '⭐'.repeat(stars), msg: msg, place: ghosts.length > 0 ? place : 0 }
     });
     _advTimer = setTimeout(nextSub, 1250);
   }
