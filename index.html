@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speed Typer — Ryan's Racing School</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Racing+Sans+One&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;height:100%;}
+  *{box-sizing:border-box;}
+  body{
+    font-family:Fredoka,sans-serif;color:#f3f5f8;overflow-x:hidden;
+    background:radial-gradient(120% 90% at 50% -10%,#2a3140 0%,#181b22 55%,#111419 100%);
+  }
+  button{font-family:Fredoka,sans-serif;}
+  button[data-action="play"]{transition:transform .12s;}
+  button[data-action="play"]:hover{transform:translateY(-3px);}
+  @keyframes stcheck{0%{background-position:0 0;}100%{background-position:60px 0;}}
+  @keyframes stpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+  @keyframes stbob{0%,100%{transform:translateY(-50%) rotate(-1deg);}50%{transform:translateY(-58%) rotate(1deg);}}
+  @keyframes stpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
+  @keyframes stfloat{0%{transform:translateY(0);}100%{transform:translateY(-26px);opacity:0;}}
+  @keyframes stspin{0%{transform:rotate(0);}100%{transform:rotate(360deg);}}
+  @keyframes stwave{0%,100%{transform:translateY(-50%) rotate(-12deg);}50%{transform:translateY(-50%) rotate(12deg);}}
+  @keyframes stconfetti{0%{transform:translateY(-30px) rotate(0deg);opacity:1;}100%{transform:translateY(460px) rotate(720deg);opacity:0;}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  "use strict";
+
+  // ---- data (ported verbatim from the Speed Typer design) ----
+  var SENTENCES = [
+    ["the car is red","i can go fast","we run to win","the big dog ran","go go go now","the sun is hot","my car is fun","we are on top","you can do it","i like to win"],
+    ["the fast car can win","i drive my red car","we race down the road","the green light is on","my car goes very fast","she can drive a truck","the race is so much fun","we zoom past the cars","the track is long and wide","i love to go very fast"],
+    ["The race starts very soon.","My fast car is shiny.","We zoom around the track.","The blue car is winning.","He drives a cool race car.","The wheels spin so fast.","I want to win the gold cup.","The crowd cheers very loud.","Our team is the best one.","The flag is black and white."],
+    ["Start your engines, the race is on!","The cars line up, ready to go.","Faster and faster, we speed away.","The red car, my favorite, takes the lead.","Around the bend, we drive with care.","Pit stop now, change the tires fast.","The checkered flag, waving high, means we win.","Buckle up, hold on, here we go!","Lap after lap, the cars race on.","The winner smiles, holding the cup."],
+    ["Can you feel the speed of the race?","Wow, that car is incredibly fast!","Who will cross the finish line first?","The engines roar like hungry lions!","How many laps until the race is done?","Watch out for the sharp left turn!","Is your seatbelt tight and ready?","The fans jump up and scream with joy!","Which team has the fastest pit crew?","Keep your eyes on the road ahead!"],
+    ["Car number 7 is in the lead today.","The race has 25 laps to finish.","We hit 200 miles per hour out there!","Only 3 cars are left in the race.","The pit stop took just 8 seconds.","There are 12 sharp turns on this track.","He has won 5 big races in a row.","The famous track is 4 miles long.","Our car finished in 1st place!","A crowd of 50,000 fans all cheered."],
+    ["The legendary driver took the final corner at full throttle.","With 2 laps to go, the crowd held its breath in silence.","\"Push harder!\" yelled the coach as the engine screamed.","Despite the rain, the brave racers pushed to the limit.","The trophy, gleaming in gold, awaited the fastest driver.","After 47 intense laps, victory belonged to the underdogs.","Lightning reflexes and total focus separate the champions.","The roaring crowd erupted as car #9 crossed in 1st place!","Every second counts when the win comes down to a heartbeat.","Through smoke, speed, and willpower, the rookie claimed glory."],
+    ["The Champion Driver, Calm And Focused, Guided The Car Through Every Turn.","After The Long, Grueling Race, The Team Proudly Celebrated Their Big Win.","The Engine Roared, The Tires Screamed, And The Crowd Rose To Their Feet.","Lap By Lap, Corner By Corner, The Brave Racer Slowly Closed The Gap.","With Steady Hands, Sharp Eyes, And Total Focus, She Crossed The Line First.","The Pit Crew Worked Fast, Changing Tires, Checking Fuel, And Waving Him On.","Rain Or Shine, Day Or Night, The Driver Never Once Gave Up The Chase.","The Track Was Long, The Turns Were Tight, And The Finish Felt Far Away.","Through The Smoke, Past The Leaders, The Rookie Made One Last Daring Move.","The Trophy Gleamed, The Music Played, And The Whole Proud Team Smiled."]
+  ];
+
+  var LEVELS = [
+    { name: "Rookie Road",    sub: "Tiny words",        icon: "🚗", diff: "EASY",   col: "#3ddc84" },
+    { name: "Pit Lane",       sub: "Short sentences",   icon: "🚙", diff: "EASY+",  col: "#3ddc84" },
+    { name: "City Circuit",   sub: "Capitals & dots",   icon: "🏙️", diff: "MEDIUM", col: "#ffd60a" },
+    { name: "Mountain Pass",  sub: "Commas & length",   icon: "⛰️", diff: "MEDIUM", col: "#ffd60a" },
+    { name: "Night Race",     sub: "Marks & questions", icon: "🌙", diff: "HARD",   col: "#ff9f0a" },
+    { name: "Turbo Speedway", sub: "Numbers join in",   icon: "💨", diff: "HARD",   col: "#ff6b35" },
+    { name: "Grand Prix",     sub: "The big leagues",   icon: "🏁", diff: "EXPERT", col: "#ff4438" },
+    { name: "Championship",   sub: "Mixed Caps, Commas & Dots", icon: "👑", diff: "LEGEND", col: "#c77dff" }
+  ];
+
+  var SHIFT = {'!':'1','@':'2','#':'3','$':'4','%':'5','^':'6','&':'7','*':'8','(':'9',')':'0','_':'-','+':'=',':':';','"':"'",'<':',','>':'.','?':'/'};
+
+  var KB = [
+    [['1','1'],['2','2'],['3','3'],['4','4'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['0','0'],['-','-']],
+    [['q','Q'],['w','W'],['e','E'],['r','R'],['t','T'],['y','Y'],['u','U'],['i','I'],['o','O'],['p','P']],
+    [['a','A'],['s','S'],['d','D'],['f','F'],['g','G'],['h','H'],['j','J'],['k','K'],['l','L'],[';',';'],["'","'"]],
+    [['lshift','⇧',1.7],['z','Z'],['x','X'],['c','C'],['v','V'],['b','B'],['n','N'],['m','M'],[',',','],['.','.'],['/','/'],['rshift','⇧',1.7]],
+    [['space','space',7]]
+  ];
+
+  var SAVE_KEY = 'ryanRacer_v1';
+  var PLAYER = 'Ryan';
+
+  // ---- state ----
+  var state = {
+    screen: 'home', level: 0, sub: 0, pos: 0, errors: 0,
+    started: false, startTime: null, wrong: false,
+    results: [], advancing: false, toast: null,
+    soundOn: true, showKb: true,
+    save: { boards: {}, lastName: PLAYER, misses: {}, cleared: {} },
+    runMisses: {},
+    lastTotal: 0, lastStars: 0, lastWpm: 0, lastPaces: null, newHigh: false, prevRecord: null,
+    scoreSaved: false, newRank: -1, countdown: false, resetLevel: -1
+  };
+  try {
+    var raw = localStorage.getItem(SAVE_KEY);
+    if (raw) {
+      var loaded = JSON.parse(raw);
+      if (loaded && loaded.boards) {
+        state.save = { boards: loaded.boards || {}, lastName: loaded.lastName || PLAYER, misses: loaded.misses || {}, cleared: loaded.cleared || {} };
+      } else if (loaded && loaded.hs) {
+        // migrate older single-best save into per-level leaderboards
+        var mb = {};
+        Object.keys(loaded.hs).forEach(function (k) {
+          mb[k] = [{ name: PLAYER, coins: loaded.hs[k] || 0, stars: (loaded.st && loaded.st[k]) || 1 }];
+        });
+        state.save = { boards: mb, lastName: PLAYER, misses: {}, cleared: {} };
+      }
+    }
+  } catch (e) {}
+
+  var app = document.getElementById('app');
+
+  // ---- audio (Web Audio, ported verbatim) ----
+  var _ac = null, _wt = null, _advTimer = null;
+  function ac() { if (!_ac) { try { _ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return _ac; }
+  function tone(f, d, type, vol, t0) {
+    if (!state.soundOn) return;
+    var a = ac(); if (!a) return;
+    var now = a.currentTime + (t0 || 0);
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'square'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(vol || 0.15, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + d);
+    o.connect(g); g.connect(a.destination); o.start(now); o.stop(now + d + 0.02);
+  }
+  function click() { tone(680, 0.05, 'square', 0.08); }
+  function buzz()  { tone(120, 0.14, 'sawtooth', 0.12); }
+  function ding()  { tone(880, 0.12, 'sine', 0.16); tone(1320, 0.16, 'sine', 0.13, 0.07); }
+  function cheer() { [523, 659, 784, 1047, 1319, 1568].forEach(function (f, i) { tone(f, 0.22, 'triangle', 0.16, i * 0.09); }); }
+  function beep(f) { tone(f || 620, 0.16, 'square', 0.14); }
+
+  // ---- soundtrack (original looping tune, generated with oscillators) ----
+  // 16-step loop over an Am - F - C - G chord cycle (4 steps each).
+  var BASS = [110, 0, 110, 0,  87.31, 0, 87.31, 0,  130.81, 0, 130.81, 0,  98, 0, 98, 0];
+  var LEAD = [329.63, 440, 523.25, 440,  349.23, 440, 523.25, 440,  329.63, 392, 523.25, 392,  293.66, 392, 493.88, 392];
+  var STEP_DUR = 0.21;
+  var music = { on: false, timer: null, next: 0, step: 0 };
+  var musicGain = null;
+  function ensureMusicGain() {
+    var a = ac(); if (!a) return null;
+    if (!musicGain) { musicGain = a.createGain(); musicGain.gain.value = 0.0001; musicGain.connect(a.destination); }
+    return musicGain;
+  }
+  function noteAt(freq, dur, type, vol, when) {
+    var a = ac(); if (!a) return;
+    var mg = ensureMusicGain(); if (!mg) return;
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(vol, when + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    o.connect(g); g.connect(mg); o.start(when); o.stop(when + dur + 0.03);
+  }
+  function scheduleStep(step, when) {
+    var b = BASS[step]; if (b) noteAt(b, 0.20, 'sawtooth', 0.18, when);
+    var l = LEAD[step]; if (l) noteAt(l, 0.18, 'square', 0.12, when);
+    noteAt(7600, 0.012, 'square', 0.05, when);                 // hi-hat tick
+    if (step % 4 === 0) noteAt(58, 0.13, 'sine', 0.5, when);   // kick on the beat
+  }
+  function musicScheduler() {
+    if (!music.on || !state.soundOn) return;
+    var a = ac(); if (!a) return;
+    if (music.next < a.currentTime) music.next = a.currentTime + 0.05; // recover if the tab was backgrounded
+    var ahead = a.currentTime + 0.25;
+    while (music.next < ahead) {
+      scheduleStep(music.step, music.next);
+      music.next += STEP_DUR;
+      music.step = (music.step + 1) % 16;
+    }
+  }
+  function startMusic() {
+    if (!state.soundOn) return;
+    var a = ac(); if (!a) return;
+    if (a.state === 'suspended') a.resume();
+    var mg = ensureMusicGain(); if (!mg) return;
+    mg.gain.cancelScheduledValues(a.currentTime);
+    mg.gain.setValueAtTime(Math.max(0.0001, mg.gain.value), a.currentTime);
+    mg.gain.linearRampToValueAtTime(0.32, a.currentTime + 0.7);
+    music.on = true; music.step = 0; music.next = a.currentTime + 0.08;
+    if (music.timer) clearInterval(music.timer);
+    music.timer = setInterval(musicScheduler, 60);
+  }
+  function stopMusic() {
+    music.on = false;
+    if (music.timer) { clearInterval(music.timer); music.timer = null; }
+    var a = ac();
+    if (a && musicGain) {
+      musicGain.gain.cancelScheduledValues(a.currentTime);
+      musicGain.gain.setValueAtTime(Math.max(0.0001, musicGain.gain.value), a.currentTime);
+      musicGain.gain.linearRampToValueAtTime(0.0001, a.currentTime + 0.25);
+    }
+  }
+
+  // ---- starting lights (F1-style countdown) ----
+  var _cdTimers = [];
+  var BULB_BASE = "width:clamp(18px,2.4vw,28px);height:clamp(18px,2.4vw,28px);border-radius:50%;transition:all .08s;";
+  var BULB_OFF = BULB_BASE + "background:#2a1414;box-shadow:inset 0 0 10px rgba(0,0,0,.85);";
+  var BULB_ON  = BULB_BASE + "background:radial-gradient(circle at 50% 35%,#ff8a82,#ff1d12 70%);box-shadow:0 0 24px rgba(255,45,30,.95),inset 0 0 6px rgba(255,190,180,.7);";
+  function setColumn(c, on) {
+    if (!refs.bulbs || !refs.bulbs[c]) return;
+    refs.bulbs[c][0].setAttribute('style', on ? BULB_ON : BULB_OFF);
+    refs.bulbs[c][1].setAttribute('style', on ? BULB_ON : BULB_OFF);
+  }
+  function clearCountdown() {
+    for (var i = 0; i < _cdTimers.length; i++) clearTimeout(_cdTimers[i]);
+    _cdTimers = [];
+  }
+  function clearPlayTimers() { clearTimeout(_advTimer); clearTimeout(_wt); }
+  function runCountdown() {
+    clearCountdown();
+    if (!refs.lights) { setState({ countdown: false }); return; }
+    refs.lights.style.display = 'flex';
+    refs.go.style.opacity = '0'; refs.go.style.animation = 'none';
+    for (var c = 0; c < 5; c++) setColumn(c, false);
+    var startDelay = 500, gap = 550, hold = 800;
+    for (var i = 0; i < 5; i++) {
+      (function (i) {
+        _cdTimers.push(setTimeout(function () { setColumn(i, true); beep(600); }, startDelay + i * gap));
+      })(i);
+    }
+    _cdTimers.push(setTimeout(function () {
+      for (var c = 0; c < 5; c++) setColumn(c, false);
+      refs.go.style.opacity = '1';
+      refs.go.style.animation = 'none'; void refs.go.offsetWidth; refs.go.style.animation = 'stpop .35s ease both';
+      tone(1150, 0.3, 'sine', 0.18); tone(1720, 0.3, 'sine', 0.12, 0.06);
+      startMusic();
+      setState({ countdown: false });
+      _cdTimers.push(setTimeout(function () { if (refs.lights) refs.lights.style.display = 'none'; }, 650));
+    }, startDelay + 5 * gap + hold));
+  }
+
+  // ---- helpers ----
+  function cur() { return SENTENCES[state.level][state.sub]; }
+  function board(i) { return state.save.boards[i] || []; }
+  function topEntry(i) { return board(i)[0] || null; }
+  function clearedLvl(i) { return !!(state.save.cleared && state.save.cleared[i]) || board(i).length > 0; }
+  function unlocked(i) { return i === 0 || clearedLvl(i - 1); }
+  function starStr(n) { n = n || 0; return '★★★☆☆☆'.slice(3 - n, 6 - n); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function keyLabel(ch) { return ch === ' ' ? 'space' : ch; }
+  function topMisses(map, n) {
+    var keys = Object.keys(map || {});
+    keys.sort(function (a, b) { return map[b] - map[a]; });
+    return keys.slice(0, n);
+  }
+  function persistSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state.save)); } catch (e) {} }
+
+  // ---- style builders (ported verbatim) ----
+  function charStyle(status) {
+    var s = "font-family:Fredoka,sans-serif;font-weight:600;font-size:clamp(30px,4.4vw,56px);line-height:1.1;padding:1px 1px;border-radius:9px;display:inline-block;transition:transform .09s ease,color .09s ease;";
+    if (status === 'done') s += "color:#3ddc84;";
+    else if (status === 'current') s += "color:#ffd60a;transform:scale(1.18);text-shadow:0 0 18px rgba(255,214,10,.65);";
+    else if (status === 'wrong') s += "color:#ff5247;background:rgba(255,82,71,.2);transform:scale(1.18);";
+    else s += "color:#5a6170;";
+    return s;
+  }
+  function spaceStyle(status) {
+    var s = "display:inline-block;width:.5em;height:.5em;margin:0 5px;border-radius:5px;align-self:center;transition:all .09s;";
+    if (status === 'done') s += "background:rgba(61,220,132,.4);";
+    else if (status === 'current') s += "background:rgba(255,214,10,.55);box-shadow:0 0 14px rgba(255,214,10,.5);";
+    else if (status === 'wrong') s += "background:rgba(255,82,71,.45);";
+    else s += "background:#33394503;border:1px dashed #3a414e;";
+    return s;
+  }
+  function keyInfo(ch) {
+    if (!ch) return { id: null, shift: false };
+    if (ch === ' ') return { id: 'space', shift: false };
+    if (/[A-Z]/.test(ch)) return { id: ch.toLowerCase(), shift: true };
+    if (/[a-z0-9]/.test(ch)) return { id: ch, shift: false };
+    if (SHIFT[ch]) return { id: SHIFT[ch], shift: true };
+    return { id: ch, shift: false };
+  }
+  // which hand types each key (standard touch-typing split)
+  var LEFT_KEYS  = {'1':1,'2':1,'3':1,'4':1,'5':1,'q':1,'w':1,'e':1,'r':1,'t':1,'a':1,'s':1,'d':1,'f':1,'g':1,'z':1,'x':1,'c':1,'v':1,'b':1,'lshift':1};
+  var RIGHT_KEYS = {'6':1,'7':1,'8':1,'9':1,'0':1,'-':1,'y':1,'u':1,'i':1,'o':1,'p':1,'h':1,'j':1,'k':1,'l':1,';':1,"'":1,'n':1,'m':1,',':1,'.':1,'/':1,'rshift':1};
+  function hand(id) {
+    if (id === 'space') return 'thumb';
+    if (LEFT_KEYS[id]) return 'left';
+    if (RIGHT_KEYS[id]) return 'right';
+    return null;
+  }
+  function keyStyle(id, wide, hot) {
+    var s = "display:flex;align-items:center;justify-content:center;height:clamp(34px,4.8vw,50px);min-width:clamp(30px,3.6vw,46px);padding:0 8px;border-radius:9px;font-family:Fredoka,sans-serif;font-weight:600;font-size:clamp(12px,1.4vw,17px);border:1px solid #333a46;box-shadow:0 2px 0 #15181f;transition:all .07s;";
+    if (wide) s += "min-width:" + (wide * 46) + "px;";
+    var h = hand(id);
+    if (hot) {
+      if (h === 'left')  return s + "background:linear-gradient(180deg,#ff7a72,#ff4438);color:#fff;border-color:#ff5247;box-shadow:0 0 18px rgba(255,68,56,.7),0 2px 0 #9e1a13;transform:translateY(1px);";
+      if (h === 'right') return s + "background:linear-gradient(180deg,#6fb8ff,#2b8bff);color:#fff;border-color:#4aa3ff;box-shadow:0 0 18px rgba(43,139,255,.7),0 2px 0 #14509e;transform:translateY(1px);";
+      return s + "background:linear-gradient(180deg,#ffe14d,#ffc400);color:#1a1205;border-color:#ffd60a;box-shadow:0 0 18px rgba(255,214,10,.65),0 2px 0 #b88f00;transform:translateY(1px);"; // space / thumb
+    }
+    // idle keys keep a soft hand tint so the left/right split is always visible
+    if (h === 'left')  return s + "background:#2a2025;color:#e0928d;border-color:#623a3e;";
+    if (h === 'right') return s + "background:#1f2530;color:#86b5e4;border-color:#2f5070;";
+    return s + "background:#262b35;color:#8b93a3;"; // space / thumb
+  }
+
+  // ---- rendering ----
+  var mountedScreen = null, mountedSub = null;
+  var refs = {}, charEls = [], keyEls = [], toastShown = false;
+  var ghostCps = 0, ghostPaces = null, ghostName = ''; // record holder's pace for the ghost car
+  function ghostOn() { return !!(ghostPaces || ghostCps > 0); }
+
+  function setState(patch) { for (var k in patch) state[k] = patch[k]; render(); }
+
+  function render() {
+    if (state.screen !== mountedScreen) {
+      mountedScreen = state.screen;
+      mountedSub = null;
+      if (state.screen === 'home') buildHome();
+      else if (state.screen === 'play') buildPlayShell();
+    }
+    if (state.screen === 'complete') {
+      buildComplete();
+    } else if (state.screen === 'play') {
+      if (state.sub !== mountedSub) { mountedSub = state.sub; buildSentence(); }
+      syncPlay();
+    }
+  }
+
+  function buildHome() {
+    var totalCoins = LEVELS.reduce(function (a, L, i) { var t = topEntry(i); return a + (t ? t.coins : 0); }, 0);
+    var misses = state.save.misses || {};
+    var mkeys = topMisses(misses, 8);
+    var troublePanel = mkeys.length
+      ? '<div style="margin-top:24px;background:#1b1e24;border:1px solid #2a2f39;border-radius:16px;padding:14px 18px;text-align:center;">'
+        + '<div style="font-size:13px;font-weight:700;letter-spacing:1px;color:#ff9f0a;margin-bottom:10px;">🎯 KEYS TO PRACTICE</div>'
+        + '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">'
+        + mkeys.map(function (ch) { return '<span style="display:inline-flex;align-items:center;gap:6px;background:#262b35;border:1px solid #3a414e;border-radius:10px;padding:6px 11px;font-weight:700;font-size:16px;color:#f3f5f8;">' + esc(keyLabel(ch)) + '<span style="font-size:11px;font-weight:600;color:#7d8696;">×' + misses[ch] + '</span></span>'; }).join('')
+        + '</div></div>'
+      : '';
+    var cards = LEVELS.map(function (L, i) {
+      var locked = !unlocked(i);
+      var top = topEntry(i);
+      var base = "position:relative;cursor:pointer;text-align:left;font-family:Fredoka,sans-serif;background:#1f242d;border:1px solid #313845;border-radius:18px;padding:18px;box-shadow:0 6px 0 #14171d;width:100%;";
+      var diffStyle = "background:" + L.col + "22;color:" + L.col + ";";
+      var lock = locked
+        ? '<div style="position:absolute;inset:0;border-radius:18px;background:rgba(17,20,25,.72);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;"><span style="font-size:30px;">🔒</span><span style="font-size:13px;font-weight:600;color:#9aa2b1;">Win Level ' + (i + 1) + ' to unlock</span></div>'
+        : '';
+      var bestLine = top
+        ? '🪙 ' + top.coins + ' <span style="color:#7d8696;font-weight:600;">· ' + esc(top.name) + '</span>'
+        : '<span style="color:#7d8696;font-weight:600;">No score yet</span>';
+      var resetBtn = (!locked && top)
+        ? '<span data-action="reset-arm" data-idx="' + i + '" title="Reset this track\'s scores" style="cursor:pointer;font-size:13px;line-height:1;color:#7d8696;border:1px solid #3a414e;border-radius:8px;padding:3px 7px;">↺</span>'
+        : '';
+      var confirmOverlay = (state.resetLevel === i)
+        ? '<div data-action="reset-no" style="position:absolute;inset:0;border-radius:18px;background:rgba(17,20,25,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center;">'
+          + '<div style="font-size:14px;font-weight:700;color:#f3f5f8;line-height:1.3;">Clear all scores for<br>' + L.name + '?</div>'
+          + '<div style="display:flex;gap:8px;">'
+          +   '<span data-action="reset-yes" data-idx="' + i + '" style="cursor:pointer;background:linear-gradient(180deg,#ff7a72,#ff4438);color:#fff;font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px;">Yes, clear</span>'
+          +   '<span data-action="reset-no" style="cursor:pointer;background:#2a2f39;color:#f3f5f8;font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px;">Cancel</span>'
+          + '</div></div>'
+        : '';
+      return '<button data-action="play" data-idx="' + i + '" style="' + base + '">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+        +   '<span style="font-family:\'Racing Sans One\',sans-serif;font-size:15px;letter-spacing:1px;color:#7d8696;">LEVEL ' + (i + 1) + '</span>'
+        +   '<span style="display:flex;align-items:center;gap:8px;">' + resetBtn + '<span style="font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;' + diffStyle + '">' + L.diff + '</span></span>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:10px;margin-top:14px;">'
+        +   '<span style="font-size:34px;">' + L.icon + '</span>'
+        +   '<div style="text-align:left;">'
+        +     '<div style="font-size:22px;font-weight:700;line-height:1.05;color:#f3f5f8;">' + L.name + '</div>'
+        +     '<div style="font-size:13px;color:#8b93a3;font-weight:500;">' + L.sub + '</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">'
+        +   '<span style="font-size:18px;letter-spacing:2px;color:#ffd60a;">' + starStr(top ? top.stars : 0) + '</span>'
+        +   '<span style="font-size:14px;font-weight:700;color:#b9c0cd;">' + bestLine + '</span>'
+        + '</div>'
+        + lock
+        + confirmOverlay
+        + '</button>';
+    }).join('');
+
+    app.innerHTML =
+      '<div style="position:relative;max-width:1120px;margin:0 auto;padding:38px 28px 70px;">'
+      + '<div style="height:14px;width:100%;background:repeating-linear-gradient(45deg,#23272f 0 12px,#2f343d 12px 24px);border-radius:8px;animation:stcheck 1.4s linear infinite;background-size:60px 100%;opacity:.55;"></div>'
+      + '<div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:18px;margin-top:26px;">'
+      +   '<div>'
+      +     '<div style="font-family:\'Racing Sans One\',sans-serif;font-size:clamp(40px,7vw,82px);line-height:.92;letter-spacing:1px;color:#ffd60a;text-shadow:0 4px 0 #b8870a,0 8px 22px rgba(0,0,0,.5);">SPEED<br><span style="color:#ff4438;text-shadow:0 4px 0 #9e1a13,0 8px 22px rgba(0,0,0,.5);">TYPER</span></div>'
+      +     '<div style="margin-top:12px;font-size:clamp(16px,2.2vw,22px);font-weight:600;color:#b9c0cd;">' + esc(PLAYER) + '\'s Racing School &nbsp;·&nbsp; pick a track to race</div>'
+      +   '</div>'
+      +   '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">'
+      +     '<div style="display:flex;align-items:center;gap:10px;background:#1f242d;border:1px solid #313845;border-radius:16px;padding:12px 18px;box-shadow:0 6px 0 #14171d;">'
+      +       '<span style="font-size:30px;animation:stspin 6s linear infinite;display:inline-block;">🪙</span>'
+      +       '<div style="text-align:right;line-height:1;">'
+      +         '<div style="font-size:28px;font-weight:700;color:#ffd60a;">' + totalCoins + '</div>'
+      +         '<div style="font-size:12px;letter-spacing:1px;color:#7d8696;font-weight:600;">TOTAL COINS</div>'
+      +       '</div>'
+      +     '</div>'
+      +     '<button data-action="toggle-sound" id="st-sound-home" style="cursor:pointer;background:#1f242d;border:1px solid #313845;border-radius:12px;padding:8px 14px;color:#b9c0cd;font-family:Fredoka,sans-serif;font-weight:600;font-size:14px;">' + (state.soundOn ? '🔊 Sound On' : '🔇 Sound Off') + '</button>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="margin-top:30px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;">' + cards + '</div>'
+      + troublePanel
+      + '<div style="margin-top:26px;text-align:center;font-size:14px;color:#6b7280;">Best played on a computer keyboard. Each track has 10 sentences — type fast and clean to earn coins! ⌨️</div>'
+      + '</div>';
+  }
+
+  function buildPlayShell() {
+    var L = LEVELS[state.level];
+    var bulbs = '';
+    for (var bc = 0; bc < 5; bc++) {
+      bulbs += '<div style="display:flex;flex-direction:column;gap:clamp(7px,1.4vw,11px);">'
+        + '<div id="st-bulb-' + bc + '-0" style="' + BULB_OFF + '"></div>'
+        + '<div id="st-bulb-' + bc + '-1" style="' + BULB_OFF + '"></div>'
+        + '</div>';
+    }
+    app.innerHTML =
+      '<div style="position:relative;display:flex;flex-direction:column;min-height:100vh;padding:18px 22px 22px;max-width:1240px;margin:0 auto;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'
+      +   '<div style="display:flex;gap:8px;align-items:center;">'
+      +     '<button data-action="home" style="cursor:pointer;background:#1f242d;border:1px solid #313845;border-radius:12px;padding:9px 16px;color:#b9c0cd;font-family:Fredoka,sans-serif;font-weight:600;font-size:14px;">← Garage</button>'
+      +     '<button data-action="toggle-sound" id="st-sound" title="Mute / unmute" style="cursor:pointer;background:#1f242d;border:1px solid #313845;border-radius:12px;padding:9px 12px;color:#b9c0cd;font-family:Fredoka,sans-serif;font-weight:600;font-size:16px;line-height:1;">' + (state.soundOn ? '🔊' : '🔇') + '</button>'
+      +   '</div>'
+      +   '<div style="text-align:center;">'
+      +     '<div style="font-family:\'Racing Sans One\',sans-serif;font-size:20px;letter-spacing:1px;color:#f3f5f8;">' + L.name + '</div>'
+      +     '<div style="font-size:13px;color:#8b93a3;font-weight:600;">Sentence <span id="st-subnum">1</span> of 10</div>'
+      +   '</div>'
+      +   '<div style="display:flex;gap:10px;">'
+      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px 14px;text-align:center;min-width:78px;"><div id="st-timer" style="font-size:20px;font-weight:700;color:#7ee0ff;line-height:1;">0.0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">SECONDS</div></div>'
+      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px 14px;text-align:center;min-width:78px;"><div id="st-wpm" style="font-size:20px;font-weight:700;color:#3ddc84;line-height:1;">0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">WPM</div></div>'
+      +     '<div style="background:#1f242d;border:1px solid #313845;border-radius:12px;padding:7px 14px;text-align:center;min-width:78px;"><div id="st-coins" style="font-size:20px;font-weight:700;color:#ffd60a;line-height:1;">🪙 0</div><div style="font-size:11px;color:#7d8696;font-weight:600;letter-spacing:1px;">COINS</div></div>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="position:relative;margin-top:18px;height:64px;border-radius:16px;background:#23262d;border:1px solid #313845;overflow:hidden;">'
+      +   '<div style="position:absolute;top:50%;left:0;right:0;height:4px;transform:translateY(-50%);background:repeating-linear-gradient(90deg,#4a5160 0 22px,transparent 22px 44px);"></div>'
+      +   '<div style="position:absolute;top:0;bottom:0;right:0;width:26px;background:repeating-conic-gradient(#e9edf3 0 25%,#1b1e24 0 50%) 0 0/13px 13px;"></div>'
+      +   '<div id="st-ghost" style="position:absolute;top:50%;font-size:30px;transform:translateY(-50%);transition:left .2s linear;left:calc(0% );filter:grayscale(100%);opacity:.42;' + (ghostOn() ? '' : 'display:none;') + '">🏎️</div>'
+      +   '<div id="st-ghost-tag" style="position:absolute;top:4px;left:10px;font-size:10px;font-weight:700;letter-spacing:.5px;color:#c2c9d4;background:rgba(12,14,18,.55);padding:2px 8px;border-radius:7px;' + (ghostOn() ? '' : 'display:none;') + '">👻 ' + esc(ghostName) + '\'s ghost</div>'
+      +   '<div id="st-car" style="position:absolute;top:50%;font-size:34px;animation:stbob 1s ease-in-out infinite;transition:left .18s cubic-bezier(.2,.8,.3,1);left:calc(0% );transform:translateY(-50%);z-index:2;">🏎️</div>'
+      +   '<div id="st-flag" style="position:absolute;top:50%;right:22px;transform:translateY(-50%);font-size:34px;opacity:0;transition:opacity .15s;z-index:6;">🏁</div>'
+      + '</div>'
+      + '<div style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;padding:24px 6px;">'
+      +   '<div id="st-lights" style="position:absolute;top:2px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:8px;z-index:8;pointer-events:none;">'
+      +     '<div style="display:flex;gap:clamp(8px,1.6vw,16px);padding:11px 15px;background:#0c0e12;border:2px solid #2a2f39;border-radius:15px;box-shadow:0 10px 26px rgba(0,0,0,.55);">' + bulbs + '</div>'
+      +     '<div id="st-go" style="font-family:\'Racing Sans One\',sans-serif;font-size:clamp(32px,5.5vw,54px);color:#3ddc84;opacity:0;text-shadow:0 0 26px rgba(61,220,132,.8);">GO!</div>'
+      +   '</div>'
+      +   '<div id="st-sentence" style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;column-gap:0;row-gap:16px;max-width:1040px;"></div>'
+      + '</div>'
+      + (state.showKb ? '<div id="st-keyboard" style="display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px;background:#1b1e24;border:1px solid #2a2f39;border-radius:16px;"></div>'
+          + '<div style="display:flex;justify-content:center;gap:18px;margin-top:8px;font-size:12px;font-weight:600;color:#8b93a3;">'
+          +   '<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ff4438;margin-right:6px;vertical-align:middle;"></span>Left hand</span>'
+          +   '<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#2b8bff;margin-right:6px;vertical-align:middle;"></span>Right hand</span>'
+          + '</div>' : '')
+      + '<div id="st-toast" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(17,20,25,.55);backdrop-filter:blur(3px);z-index:5;">'
+      +   '<div id="st-toast-inner" style="text-align:center;animation:stpop .3s ease both;">'
+      +     '<div id="st-toast-stars" style="font-size:64px;"></div>'
+      +     '<div style="font-family:\'Racing Sans One\',sans-serif;font-size:40px;color:#ffd60a;margin-top:6px;">+<span id="st-toast-coins"></span> 🪙</div>'
+      +     '<div id="st-toast-msg" style="font-size:20px;color:#b9c0cd;font-weight:600;margin-top:4px;"></div>'
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+
+    refs = {
+      subnum: document.getElementById('st-subnum'),
+      timer: document.getElementById('st-timer'),
+      wpm: document.getElementById('st-wpm'),
+      coins: document.getElementById('st-coins'),
+      car: document.getElementById('st-car'),
+      sentence: document.getElementById('st-sentence'),
+      keyboard: document.getElementById('st-keyboard'),
+      toast: document.getElementById('st-toast'),
+      toastInner: document.getElementById('st-toast-inner'),
+      toastStars: document.getElementById('st-toast-stars'),
+      toastCoins: document.getElementById('st-toast-coins'),
+      toastMsg: document.getElementById('st-toast-msg'),
+      lights: document.getElementById('st-lights'),
+      go: document.getElementById('st-go'),
+      flag: document.getElementById('st-flag'),
+      ghost: document.getElementById('st-ghost'),
+      bulbs: []
+    };
+    for (var bi = 0; bi < 5; bi++) {
+      refs.bulbs[bi] = [document.getElementById('st-bulb-' + bi + '-0'), document.getElementById('st-bulb-' + bi + '-1')];
+    }
+    toastShown = false;
+    if (state.showKb) buildKeyboard();
+  }
+
+  function buildKeyboard() {
+    refs.keyboard.innerHTML = '';
+    keyEls = [];
+    KB.forEach(function (row) {
+      var rd = document.createElement('div');
+      rd.setAttribute('style', 'display:flex;gap:7px;justify-content:center;');
+      row.forEach(function (k) {
+        var id = k[0], label = k[1], wide = k[2];
+        var kd = document.createElement('div');
+        kd.textContent = label;
+        kd.setAttribute('style', keyStyle(id, wide, false));
+        keyEls.push({ id: id, wide: wide, el: kd });
+        rd.appendChild(kd);
+      });
+      refs.keyboard.appendChild(rd);
+    });
+  }
+
+  function buildSentence() {
+    var sent = cur();
+    refs.sentence.innerHTML = '';
+    charEls = [];
+    var wordSpan = null;
+    for (var i = 0; i < sent.length; i++) {
+      var ch = sent[i];
+      if (ch === ' ') {
+        if (wordSpan) { refs.sentence.appendChild(wordSpan); wordSpan = null; }
+        var sp = document.createElement('span');
+        sp.setAttribute('style', spaceStyle('todo'));
+        refs.sentence.appendChild(sp);
+        charEls[i] = { el: sp, isSpace: true };
+      } else {
+        if (!wordSpan) {
+          wordSpan = document.createElement('span');
+          wordSpan.setAttribute('style', 'display:inline-flex;align-items:flex-end;');
+        }
+        var cs = document.createElement('span');
+        cs.textContent = ch;
+        cs.setAttribute('style', charStyle('todo'));
+        wordSpan.appendChild(cs);
+        charEls[i] = { el: cs, isSpace: false };
+      }
+    }
+    if (wordSpan) refs.sentence.appendChild(wordSpan);
+  }
+
+  function syncStats() {
+    var el = state.started ? (Date.now() - state.startTime) / 1000 : 0;
+    refs.timer.textContent = el.toFixed(1);
+    refs.wpm.textContent = (state.started && el > 0.4) ? Math.round((state.pos / 5) / (el / 60)) : 0;
+    refs.coins.textContent = '🪙 ' + state.results.reduce(function (a, r) { return a + r.coins; }, 0);
+    if (refs.ghost && ghostOn()) {
+      var gcps = ghostPaces ? (ghostPaces[state.sub] || 0) : ghostCps; // this sentence's recorded pace
+      var glen = cur().length;
+      var gpct = (glen > 0 && gcps > 0) ? Math.min((el * gcps / glen) * 100, 94) : 0;
+      refs.ghost.style.left = 'calc(' + gpct + '% )';
+    }
+  }
+
+  function syncPlay() {
+    var sent = cur();
+    var pos = state.pos, wrong = state.wrong;
+    for (var i = 0; i < charEls.length; i++) {
+      var status = i < pos ? 'done' : (i === pos ? 'current' : 'todo');
+      if (i === pos && wrong) status = 'wrong';
+      var ce = charEls[i];
+      ce.el.setAttribute('style', ce.isSpace ? spaceStyle(status) : charStyle(status));
+    }
+    var pct = Math.round((pos / sent.length) * 100);
+    refs.car.style.left = 'calc(' + Math.min(pct, 94) + '% )'; // 94% keeps the car visible on the line at all widths
+
+    var next = keyInfo(sent[pos]);
+    var nextHand = hand(next.id);
+    for (var j = 0; j < keyEls.length; j++) {
+      var k = keyEls[j];
+      var hot;
+      if (k.id === 'lshift') hot = next.shift && nextHand === 'right'; // right-hand char -> press LEFT shift
+      else if (k.id === 'rshift') hot = next.shift && nextHand === 'left'; // left-hand char -> press RIGHT shift
+      else hot = (k.id === next.id);
+      k.el.setAttribute('style', keyStyle(k.id, k.wide, hot));
+    }
+
+    refs.subnum.textContent = state.sub + 1;
+    syncStats();
+
+    if (state.toast && !toastShown) {
+      toastShown = true;
+      refs.toastStars.textContent = state.toast.stars;
+      refs.toastCoins.textContent = state.toast.coins;
+      refs.toastMsg.textContent = state.toast.msg;
+      refs.toast.style.display = 'flex';
+      var inner = refs.toastInner;
+      inner.style.animation = 'none';
+      void inner.offsetWidth;
+      inner.style.animation = 'stpop .3s ease both';
+      if (refs.flag) { refs.flag.style.opacity = '1'; refs.flag.style.animation = 'stwave .5s ease-in-out infinite'; }
+    } else if (!state.toast && toastShown) {
+      toastShown = false;
+      refs.toast.style.display = 'none';
+      if (refs.flag) { refs.flag.style.opacity = '0'; refs.flag.style.animation = 'none'; }
+    }
+  }
+
+  function buildComplete() {
+    var lvl = state.level;
+    var playName = LEVELS[lvl].name;
+    var doneCoins = state.lastTotal;
+    var doneStars = starStr(state.lastStars);
+    var newHigh = state.newHigh;
+    var hasNext = lvl < 7;
+    var top = topEntry(lvl);
+    var doneBest = top ? top.coins : 0;
+
+    // motivational gap-to-record message (uses the record that existed before this run)
+    var pr = state.prevRecord;
+    var mBase = 'margin-top:16px;border-radius:14px;padding:11px 14px;font-size:14px;font-weight:700;';
+    var mGood = 'background:rgba(61,220,132,.14);border:1px solid rgba(61,220,132,.4);color:#7ef0a8;';
+    var mChase = 'background:rgba(255,159,10,.12);border:1px solid rgba(255,159,10,.35);color:#ffb84d;';
+    var motiv;
+    if (!pr) {
+      motiv = '<div style="' + mBase + mGood + '">🏆 You set the first record on this track!</div>';
+    } else if (doneCoins > pr.coins) {
+      motiv = '<div style="' + mBase + mGood + '">🎉 New record! You beat ' + esc(pr.name) + ' by ' + (doneCoins - pr.coins) + ' 🪙!</div>';
+    } else if (doneCoins === pr.coins) {
+      motiv = '<div style="' + mBase + mChase + '">🤝 You tied ' + esc(pr.name) + '\'s record — Race Again to take the lead!</div>';
+    } else {
+      motiv = '<div style="' + mBase + mChase + '">🏁 Just ' + (pr.coins - doneCoins) + ' 🪙 behind ' + esc(pr.name) + '\'s record — Race Again to beat it!</div>';
+    }
+
+    var rmKeys = topMisses(state.runMisses || {}, 8);
+    var troubleRun = rmKeys.length
+      ? '<div style="margin-top:12px;font-size:13px;font-weight:600;color:#ffb84d;">🎯 Keys to practice: ' + rmKeys.map(function (ch) { return '<span style="display:inline-block;background:#2a2f39;border-radius:7px;padding:2px 9px;margin:2px;color:#f3f5f8;font-weight:700;">' + esc(keyLabel(ch)) + '</span>'; }).join('') + '</div>'
+      : '<div style="margin-top:12px;font-size:13px;font-weight:700;color:#7ef0a8;">✅ Perfect accuracy — clean run!</div>';
+
+    var cColors = ['#ff4438', '#ffd60a', '#3ddc84', '#7ee0ff', '#ff9f0a', '#ff6b35'];
+    var confetti = '<div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:24px;z-index:2;">';
+    for (var ci = 0; ci < 26; ci++) {
+      var cl = Math.round(Math.random() * 100);
+      var cd = (Math.random() * 0.8).toFixed(2);
+      var cu = (1.6 + Math.random() * 1.5).toFixed(2);
+      var cs = 6 + Math.round(Math.random() * 7);
+      var cr = Math.round(Math.random() * 360);
+      confetti += '<div style="position:absolute;top:-24px;left:' + cl + '%;width:' + cs + 'px;height:' + (cs + 4) + 'px;background:' + cColors[ci % cColors.length] + ';border-radius:2px;transform:rotate(' + cr + 'deg);animation:stconfetti ' + cu + 's linear ' + cd + 's both;"></div>';
+    }
+    confetti += '</div>';
+
+    var middle;
+    if (!state.scoreSaved) {
+      middle =
+        '<div style="margin-top:20px;">'
+        + '<div style="font-size:14px;color:#8b93a3;font-weight:600;margin-bottom:8px;">Type your name to save this score</div>'
+        + '<div style="display:flex;gap:10px;">'
+        +   '<input id="st-name" type="text" maxlength="12" placeholder="Your name" autocomplete="off" style="flex:1;min-width:0;background:#171a20;border:1px solid #3a414e;border-radius:14px;padding:13px 14px;color:#f3f5f8;font-family:Fredoka,sans-serif;font-weight:700;font-size:18px;text-align:center;outline:none;">'
+        +   '<button data-action="save-score" style="cursor:pointer;white-space:nowrap;background:linear-gradient(180deg,#ffe14d,#ffc400);border:none;border-radius:14px;padding:0 20px;color:#1a1205;font-family:Fredoka,sans-serif;font-weight:700;font-size:16px;box-shadow:0 5px 0 #b88f00;">💾 Save</button>'
+        + '</div>'
+        + '</div>';
+    } else {
+      var rows = board(lvl).map(function (e, idx) {
+        var isNew = idx === state.newRank;
+        var medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : ('#' + (idx + 1));
+        var rowBg = isNew
+          ? 'background:linear-gradient(180deg,#ffe14d,#ffc400);box-shadow:0 0 16px rgba(255,214,10,.4);'
+          : 'background:#171a20;';
+        var nameCol = isNew ? '#1a1205' : '#f3f5f8';
+        var coinCol = isNew ? '#1a1205' : '#ffd60a';
+        var medalCol = isNew ? '#7a5b00' : '#7d8696';
+        var starCol = isNew ? '#9e7a00' : '#ffd60a';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:11px;margin-bottom:6px;' + rowBg + '">'
+          + '<span style="display:flex;align-items:center;gap:10px;min-width:0;">'
+          +   '<span style="font-size:15px;font-weight:700;width:28px;text-align:center;color:' + medalCol + ';">' + medal + '</span>'
+          +   '<span style="font-size:16px;font-weight:700;color:' + nameCol + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(e.name) + '</span>'
+          + '</span>'
+          + '<span style="display:flex;align-items:center;gap:12px;flex:none;">'
+          +   '<span style="font-size:13px;letter-spacing:1px;color:' + starCol + ';">' + starStr(e.stars) + '</span>'
+          +   '<span style="font-size:16px;font-weight:700;color:' + coinCol + ';">🪙 ' + e.coins + '</span>'
+          + '</span>'
+          + '</div>';
+      }).join('');
+      var missNote = (state.newRank < 0)
+        ? '<div style="font-size:13px;color:#8b93a3;font-weight:600;margin-top:6px;text-align:center;">Your 🪙 ' + doneCoins + ' didn\'t make the top 10 this time — race again!</div>'
+        : '';
+      middle =
+        '<div style="margin-top:20px;text-align:left;">'
+        + '<div style="font-family:\'Racing Sans One\',sans-serif;font-size:15px;letter-spacing:1px;color:#f3f5f8;text-align:center;margin-bottom:12px;">🏁 ' + playName.toUpperCase() + ' · HIGH SCORES</div>'
+        + rows
+        + missNote
+        + '</div>';
+    }
+
+    app.innerHTML =
+      '<div style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;">'
+      + '<div style="position:relative;width:100%;max-width:520px;background:#1f242d;border:1px solid #313845;border-radius:24px;padding:34px 30px;text-align:center;box-shadow:0 14px 0 #14171d;">'
+      +   confetti
+      +   '<div style="font-size:60px;animation:stpop .4s ease both;">🏆</div>'
+      +   '<div style="font-family:\'Racing Sans One\',sans-serif;font-size:30px;color:#f3f5f8;margin-top:2px;">Track Complete!</div>'
+      +   '<div style="font-size:15px;color:#8b93a3;font-weight:600;">' + playName + '</div>'
+      +   (newHigh ? '<div style="display:inline-block;margin-top:12px;background:linear-gradient(180deg,#ffe14d,#ffc400);color:#1a1205;font-weight:700;font-size:15px;padding:7px 18px;border-radius:999px;animation:stpulse 1s ease-in-out infinite;">🎉 NEW HIGH SCORE!</div>' : '')
+      +   '<div style="font-size:48px;letter-spacing:8px;color:#ffd60a;margin-top:14px;">' + doneStars + '</div>'
+      +   '<div style="display:flex;justify-content:center;gap:14px;margin-top:16px;">'
+      +     '<div style="flex:1;background:#171a20;border-radius:14px;padding:14px;"><div style="font-size:28px;font-weight:700;color:#ffd60a;">🪙 ' + doneCoins + '</div><div style="font-size:12px;color:#7d8696;font-weight:600;letter-spacing:1px;">COINS EARNED</div></div>'
+      +     '<div style="flex:1;background:#171a20;border-radius:14px;padding:14px;"><div style="font-size:28px;font-weight:700;color:#7ee0ff;">🪙 ' + doneBest + '</div><div style="font-size:12px;color:#7d8696;font-weight:600;letter-spacing:1px;">TRACK BEST</div></div>'
+      +   '</div>'
+      +   motiv
+      +   troubleRun
+      +   middle
+      +   '<div style="display:flex;gap:12px;margin-top:22px;">'
+      +     '<button data-action="replay" style="flex:1;cursor:pointer;background:#2a2f39;border:1px solid #3a414e;border-radius:14px;padding:14px;color:#f3f5f8;font-family:Fredoka,sans-serif;font-weight:700;font-size:16px;">↻ Race Again</button>'
+      +     (hasNext ? '<button data-action="next" style="flex:1.3;cursor:pointer;background:linear-gradient(180deg,#ffe14d,#ffc400);border:none;border-radius:14px;padding:14px;color:#1a1205;font-family:Fredoka,sans-serif;font-weight:700;font-size:16px;box-shadow:0 5px 0 #b88f00;">Next Track →</button>' : '')
+      +   '</div>'
+      +   '<button data-action="home" style="margin-top:14px;cursor:pointer;background:none;border:none;color:#8b93a3;font-family:Fredoka,sans-serif;font-weight:600;font-size:14px;">← Back to Garage</button>'
+      + '</div>'
+      + '</div>';
+
+    if (!state.scoreSaved) {
+      var inp = document.getElementById('st-name');
+      if (inp) {
+        inp.value = state.save.lastName || PLAYER;
+        inp.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter') { ev.preventDefault(); saveScore(inp.value); }
+        });
+        inp.focus();
+        inp.select();
+      }
+    }
+  }
+
+  // ---- game logic (ported verbatim) ----
+  function onKey(e) {
+    if (state.screen !== 'play' || state.advancing || state.countdown) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === ' ' || e.key === 'Backspace' || e.key === 'Tab' || e.key === '/' || e.key === "'") e.preventDefault();
+    if (e.key.length !== 1) return;
+    var sent = cur();
+    if (state.pos >= sent.length) return;
+    var expected = sent[state.pos];
+    if (e.key === expected) {
+      var started = state.started, startTime = state.startTime;
+      if (!started) { started = true; startTime = Date.now(); }
+      var pos = state.pos + 1;
+      click();
+      setState({ pos: pos, started: started, startTime: startTime, wrong: false });
+      if (pos === sent.length) finishSentence(startTime);
+    } else {
+      buzz();
+      if (expected) { // tally the key they were supposed to hit
+        state.save.misses[expected] = (state.save.misses[expected] || 0) + 1;
+        state.runMisses[expected] = (state.runMisses[expected] || 0) + 1;
+      }
+      setState({ errors: state.errors + 1, wrong: true });
+      clearTimeout(_wt);
+      _wt = setTimeout(function () { setState({ wrong: false }); }, 170);
+    }
+  }
+
+  function finishSentence(startTime) {
+    var sent = cur();
+    var elapsed = Math.max(0.5, (Date.now() - startTime) / 1000);
+    var wpm = Math.round((sent.length / 5) / (elapsed / 60));
+    var acc = sent.length / (sent.length + state.errors);
+    var coins = Math.max(5, Math.round(8 + Math.min(wpm, 80) * 0.32 + acc * 18));
+    var stars = (state.errors === 0 && wpm >= 22) ? 3 : (state.errors <= 2 ? 2 : 1);
+    ding();
+    var results = state.results.concat([{ coins: coins, stars: stars, wpm: wpm, secs: elapsed, chars: sent.length }]);
+    var msgs = ['Nice driving!', 'Speedy!', 'Vroom vroom!', 'Great lap!', 'You rock!', 'Turbo!'];
+    setState({
+      results: results, advancing: true,
+      toast: { coins: coins, stars: '⭐'.repeat(stars), msg: msgs[Math.floor(Math.random() * msgs.length)] }
+    });
+    _advTimer = setTimeout(nextSub, 1250);
+  }
+
+  function nextSub() {
+    if (state.sub < 9) {
+      setState({ sub: state.sub + 1, pos: 0, errors: 0, started: false, startTime: null, toast: null, advancing: false, wrong: false });
+    } else {
+      completeLevel();
+    }
+  }
+
+  function completeLevel() {
+    var lvl = state.level;
+    var total = state.results.reduce(function (a, r) { return a + r.coins; }, 0);
+    var starSum = state.results.reduce(function (a, r) { return a + r.stars; }, 0);
+    var totalChars = state.results.reduce(function (a, r) { return a + (r.chars || 0); }, 0);
+    var totalSecs = state.results.reduce(function (a, r) { return a + (r.secs || 0); }, 0);
+    var levelWpm = totalSecs > 0 ? Math.round((totalChars / 5) / (totalSecs / 60)) : 0;
+    var paces = state.results.map(function (r) { return (r.secs > 0) ? Math.round((r.chars / r.secs) * 100) / 100 : 0; });
+    var avg = Math.max(1, Math.round(starSum / 10));
+    var prevTop = topEntry(lvl);
+    var newHigh = !prevTop || total > prevTop.coins;
+    clearCountdown();
+    stopMusic();
+    cheer();
+    // the run's score is recorded once the player confirms their name on the complete screen
+    setState({
+      screen: 'complete', lastTotal: total, lastStars: avg, lastWpm: levelWpm, lastPaces: paces, newHigh: newHigh,
+      prevRecord: prevTop ? { name: prevTop.name, coins: prevTop.coins } : null,
+      scoreSaved: false, newRank: -1, advancing: false, toast: null
+    });
+  }
+
+  function cloneBoards(src) {
+    var out = {};
+    for (var k in src) out[k] = src[k].slice();
+    return out;
+  }
+
+  function saveScore(name) {
+    if (state.scoreSaved) return;
+    var lvl = state.level;
+    name = (name || '').replace(/\s+/g, ' ').trim().slice(0, 12) || state.save.lastName || PLAYER;
+    var boards = cloneBoards(state.save.boards);
+    var list = (boards[lvl] || []).slice();
+    var entry = { name: name, coins: state.lastTotal, stars: state.lastStars, wpm: state.lastWpm || 0, paces: state.lastPaces || null };
+    list.push(entry);
+    list.sort(function (a, b) { return (b.coins - a.coins) || (b.stars - a.stars); });
+    list = list.slice(0, 10);
+    var rank = list.indexOf(entry);
+    boards[lvl] = list;
+    var cleared = {}; for (var ck in state.save.cleared) cleared[ck] = state.save.cleared[ck]; cleared[lvl] = true;
+    var save = { boards: boards, lastName: name, misses: state.save.misses || {}, cleared: cleared };
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+    ding();
+    setState({ save: save, scoreSaved: true, newRank: rank });
+  }
+
+  function ensureSaved() {
+    if (state.scoreSaved) return;
+    var inp = document.getElementById('st-name');
+    saveScore(inp ? inp.value : '');
+  }
+
+  function resetLevelBoard(lvl) {
+    var boards = cloneBoards(state.save.boards);
+    delete boards[lvl]; // wipe this track's scores, but keep 'cleared' so the next track stays unlocked
+    var save = { boards: boards, lastName: state.save.lastName, misses: state.save.misses || {}, cleared: state.save.cleared || {} };
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {}
+    setState({ save: save, resetLevel: -1, newRank: -1 });
+  }
+
+  function start(idx) {
+    clearCountdown();
+    clearPlayTimers();
+    stopMusic();
+    var rec = topEntry(idx);                                  // race the current record holder's ghost
+    ghostName = rec ? rec.name : '';
+    ghostPaces = (rec && rec.paces && rec.paces.length === 10) ? rec.paces : null; // per-sentence pace
+    ghostCps = (rec && rec.wpm) ? (rec.wpm * 5 / 60) : 0;     // fallback for older records without splits
+    var a = ac(); if (a && a.state === 'suspended') a.resume(); // unlock/resume audio inside the click gesture
+    state.runMisses = {};
+    setState({ screen: 'play', level: idx, sub: 0, pos: 0, errors: 0, started: false, startTime: null, results: [], advancing: false, toast: null, wrong: false, scoreSaved: false, newRank: -1, countdown: true, resetLevel: -1 });
+    runCountdown();
+  }
+
+  // ---- input wiring ----
+  app.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-action]');
+    if (!t) return;
+    var a = t.getAttribute('data-action');
+    if (a === 'play') {
+      var i = +t.getAttribute('data-idx');
+      if (!unlocked(i)) { buzz(); } else { start(i); }
+    } else if (a === 'reset-arm') {
+      setState({ resetLevel: +t.getAttribute('data-idx') });
+    } else if (a === 'reset-yes') {
+      resetLevelBoard(+t.getAttribute('data-idx'));
+    } else if (a === 'reset-no') {
+      setState({ resetLevel: -1 });
+    } else if (a === 'toggle-sound') {
+      var nowOn = !state.soundOn;
+      setState({ soundOn: nowOn });
+      if (nowOn) { if (state.screen === 'play' && !state.countdown) startMusic(); }
+      else { stopMusic(); }
+      // same-screen state change doesn't re-render, so refresh the button label(s) directly
+      var sbH = document.getElementById('st-sound-home'); if (sbH) sbH.textContent = nowOn ? '🔊 Sound On' : '🔇 Sound Off';
+      var sbP = document.getElementById('st-sound'); if (sbP) sbP.textContent = nowOn ? '🔊' : '🔇';
+    } else if (a === 'save-score') {
+      var nameInput = document.getElementById('st-name');
+      saveScore(nameInput ? nameInput.value : '');
+    } else if (a === 'home') {
+      if (state.screen === 'complete') ensureSaved();
+      clearCountdown();
+      clearPlayTimers();
+      stopMusic();
+      persistSave(); // keep any trouble-key tallies from an abandoned run
+      setState({ screen: 'home', countdown: false });
+    } else if (a === 'replay') {
+      ensureSaved();
+      start(state.level);
+    } else if (a === 'next') {
+      ensureSaved();
+      start(Math.min(7, state.level + 1));
+    }
+  });
+
+  window.addEventListener('keydown', onKey);
+
+  setInterval(function () {
+    if (state.screen === 'play' && state.started && !state.advancing) syncStats();
+  }, 120);
+
+  render();
+})();
+</script>
+</body>
+</html>

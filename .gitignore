@@ -1,0 +1,7 @@
+# macOS
+.DS_Store
+
+# Editor / misc
+*.log
+*.swp
+node_modules/
