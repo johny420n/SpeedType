@@ -805,7 +805,11 @@
     var elapsed = Math.max(0.5, (Date.now() - startTime) / 1000);
     var wpm = Math.round((sent.length / 5) / (elapsed / 60));
     var acc = sent.length / (sent.length + state.errors);
-    var coins = Math.max(5, Math.round(8 + Math.min(wpm, 80) * 0.32 + acc * 18));
+    // wide scale: speed is the main lever (capped high to bound burst-abuse) + stage length,
+    // weighted by accuracy SQUARED so clean vs sloppy separates sharply, plus a clean-run bonus
+    var coins = Math.round((Math.min(wpm, 140) * 6 + sent.length * 2) * acc * acc);
+    if (state.errors === 0) coins += 60;
+    coins = Math.max(10, coins);
     var stars = (state.errors === 0 && wpm >= 22) ? 3 : (state.errors <= 2 ? 2 : 1);
     ding();
     var results = state.results.concat([{ coins: coins, stars: stars, wpm: wpm, secs: elapsed, chars: sent.length }]);
