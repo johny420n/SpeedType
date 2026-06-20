@@ -28,7 +28,7 @@
   button[data-action="play"]:hover{transform:translateY(-3px);}
   @keyframes stcheck{0%{background-position:0 0;}100%{background-position:60px 0;}}
   @keyframes stpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
-  @keyframes stbob{0%,100%{transform:translateY(-50%) rotate(-1deg);}50%{transform:translateY(-58%) rotate(1deg);}}
+  @keyframes stbob{0%,100%{transform:translateY(-50%) rotate(-1deg) scaleX(-1);}50%{transform:translateY(-58%) rotate(1deg) scaleX(-1);}}
   @keyframes stpop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
   @keyframes stfloat{0%{transform:translateY(0);}100%{transform:translateY(-26px);opacity:0;}}
   @keyframes stspin{0%{transform:rotate(0);}100%{transform:rotate(360deg);}}
@@ -438,7 +438,7 @@
     var K = 1 + ghosts.length, lane = function (ci) { return ((ci + 0.5) / K * 100).toFixed(1); };
     var ghostCars = '';
     for (var gv = 0; gv < ghosts.length; gv++) {
-      ghostCars += '<div id="st-ghost-' + gv + '" style="position:absolute;top:' + lane(gv + 1) + '%;font-size:26px;transform:translateY(-50%);transition:left .2s linear;left:calc(0% );filter:' + ghosts[gv].filter + ';opacity:.92;z-index:1;">🏎️</div>';
+      ghostCars += '<div id="st-ghost-' + gv + '" style="position:absolute;top:' + lane(gv + 1) + '%;font-size:26px;transform:translateY(-50%) scaleX(-1);transition:left .2s linear;left:calc(0% );filter:' + ghosts[gv].filter + ';opacity:.92;z-index:1;">🏎️</div>';
     }
     var ghostLegend = ghosts.length
       ? '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:6px;font-size:11px;font-weight:700;color:#9aa2b1;">'
@@ -467,7 +467,7 @@
       +   '<div style="position:absolute;top:50%;left:0;right:0;height:4px;transform:translateY(-50%);background:repeating-linear-gradient(90deg,#4a5160 0 22px,transparent 22px 44px);"></div>'
       +   '<div style="position:absolute;top:0;bottom:0;right:0;width:26px;background:repeating-conic-gradient(#e9edf3 0 25%,#1b1e24 0 50%) 0 0/13px 13px;"></div>'
       +   ghostCars
-      +   '<div id="st-car" style="position:absolute;top:' + lane(0) + '%;font-size:28px;animation:stbob 1s ease-in-out infinite;transition:left .18s cubic-bezier(.2,.8,.3,1);left:calc(0% );transform:translateY(-50%);z-index:3;">🏎️</div>'
+      +   '<div id="st-car" style="position:absolute;top:' + lane(0) + '%;font-size:28px;animation:stbob 1s ease-in-out infinite;transition:left .18s cubic-bezier(.2,.8,.3,1);left:calc(0% );transform:translateY(-50%) scaleX(-1);z-index:3;">🏎️</div>'
       +   '<div id="st-flag" style="position:absolute;top:50%;right:22px;transform:translateY(-50%);font-size:34px;opacity:0;transition:opacity .15s;z-index:6;">🏁</div>'
       + '</div>'
       + ghostLegend
