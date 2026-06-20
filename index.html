@@ -716,7 +716,7 @@
     }
 
     app.innerHTML =
-      '<div style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;">'
+      '<div style="position:relative;min-height:' + (TOUCH ? 'auto' : '100vh') + ';display:flex;align-items:' + (TOUCH ? 'flex-start' : 'center') + ';justify-content:center;padding:' + (TOUCH ? '16px 14px 28px' : '30px') + ';">'
       + '<div style="position:relative;width:100%;max-width:520px;background:#1f242d;border:1px solid #313845;border-radius:24px;padding:34px 30px;text-align:center;box-shadow:0 14px 0 #14171d;">'
       +   confetti
       +   '<div style="font-size:58px;line-height:1;">'
@@ -782,7 +782,8 @@
     }
   }
 
-  function onKey(e) { // physical keyboard
+  function onKey(e) { // physical keyboard (desktop). On touch, onInput is the input path — skip to avoid double-typing.
+    if (TOUCH) return;
     if (state.screen !== 'play' || state.advancing || state.countdown) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === ' ' || e.key === 'Backspace' || e.key === 'Tab' || e.key === '/' || e.key === "'") e.preventDefault();
