@@ -314,10 +314,11 @@
     if (state.screen !== mountedScreen) {
       mountedScreen = state.screen;
       mountedSub = null;
-      if (state.screen === 'home') buildHome();
-      else if (state.screen === 'play') buildPlayShell();
+      if (state.screen === 'play') buildPlayShell();
     }
-    if (state.screen === 'complete') {
+    if (state.screen === 'home') {
+      buildHome(); // rebuild on every render so reset/arm and other home state changes show
+    } else if (state.screen === 'complete') {
       buildComplete();
     } else if (state.screen === 'play') {
       if (state.sub !== mountedSub) { mountedSub = state.sub; buildSentence(); }
