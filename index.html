@@ -78,6 +78,7 @@
 
   var SAVE_KEY = 'ryanRacer_v1';
   var PLAYER = 'Ryan';
+  var TOUCH = !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches); // phone/tablet → use the device's own keyboard
 
   // ---- state ----
   var state = {
@@ -301,6 +302,14 @@
     if (h === 'right') return s + "background:#1f2530;color:#86b5e4;border-color:#2f5070;";
     return s + "background:#262b35;color:#8b93a3;"; // space / thumb
   }
+  // current letter coloured by hand (used on touch devices where the on-screen keyboard is hidden)
+  function charStyleHand(ch) {
+    var base = "font-family:Fredoka,sans-serif;font-weight:600;font-size:clamp(34px,5vw,58px);line-height:1.1;padding:1px 1px;border-radius:9px;display:inline-block;transition:transform .09s ease,color .09s ease;transform:scale(1.2);";
+    var h = hand(keyInfo(ch).id);
+    if (h === 'left')  return base + "color:#ff5247;text-shadow:0 0 20px rgba(255,82,71,.7);";
+    if (h === 'right') return base + "color:#5aa9ff;text-shadow:0 0 20px rgba(90,169,255,.7);";
+    return base + "color:#ffd60a;text-shadow:0 0 18px rgba(255,214,10,.65);"; // space/other → thumb
+  }
 
   // ---- rendering ----
   var mountedScreen = null, mountedSub = null;
@@ -415,7 +424,7 @@
         + '</div>';
     }
     app.innerHTML =
-      '<div style="position:relative;display:flex;flex-direction:column;min-height:100vh;padding:18px 22px 22px;max-width:1240px;margin:0 auto;">'
+      '<div style="position:relative;display:flex;flex-direction:column;min-height:' + (TOUCH ? 'auto' : '100vh') + ';padding:' + (TOUCH ? '12px 14px 16px' : '18px 22px 22px') + ';max-width:1240px;margin:0 auto;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">'
       +   '<div style="display:flex;gap:8px;align-items:center;">'
       +     '<button data-action="home" style="cursor:pointer;background:#1f242d;border:1px solid #313845;border-radius:12px;padding:9px 16px;color:#b9c0cd;font-family:Fredoka,sans-serif;font-weight:600;font-size:14px;">← Garage</button>'
@@ -439,7 +448,7 @@
       +   '<div id="st-car" style="position:absolute;top:50%;font-size:34px;animation:stbob 1s ease-in-out infinite;transition:left .18s cubic-bezier(.2,.8,.3,1);left:calc(0% );transform:translateY(-50%);z-index:2;">🏎️</div>'
       +   '<div id="st-flag" style="position:absolute;top:50%;right:22px;transform:translateY(-50%);font-size:34px;opacity:0;transition:opacity .15s;z-index:6;">🏁</div>'
       + '</div>'
-      + '<div style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;padding:24px 6px;">'
+      + '<div style="position:relative;display:flex;justify-content:center;' + (TOUCH ? 'flex:none;align-items:flex-start;padding:16px 6px 8px;' : 'flex:1;align-items:center;padding:24px 6px;') + '">'
       +   '<div id="st-lights" style="position:absolute;top:2px;left:50%;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:8px;z-index:8;pointer-events:none;">'
       +     '<div id="st-fingers" style="font-family:Fredoka,sans-serif;font-size:clamp(14px,2.2vw,20px);font-weight:700;color:#ffd60a;text-shadow:0 2px 6px rgba(0,0,0,.55);">⌨️ Fingers to the starting line!</div>'
       +     '<div style="display:flex;gap:clamp(8px,1.6vw,16px);padding:11px 15px;background:#0c0e12;border:2px solid #2a2f39;border-radius:15px;box-shadow:0 10px 26px rgba(0,0,0,.55);">' + bulbs + '</div>'
@@ -447,11 +456,12 @@
       +   '</div>'
       +   '<div id="st-sentence" style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;column-gap:0;row-gap:16px;max-width:1040px;"></div>'
       + '</div>'
-      + (state.showKb ? '<div id="st-keyboard" style="display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px;background:#1b1e24;border:1px solid #2a2f39;border-radius:16px;"></div>'
+      + (state.showKb && !TOUCH ? '<div id="st-keyboard" style="display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px;background:#1b1e24;border:1px solid #2a2f39;border-radius:16px;"></div>'
           + '<div style="display:flex;justify-content:center;gap:18px;margin-top:8px;font-size:12px;font-weight:600;color:#8b93a3;">'
           +   '<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ff4438;margin-right:6px;vertical-align:middle;"></span>Left hand</span>'
           +   '<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#2b8bff;margin-right:6px;vertical-align:middle;"></span>Right hand</span>'
           + '</div>' : '')
+      + (TOUCH ? '<input id="st-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="type here" style="position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;border:0;padding:0;margin:0;pointer-events:none;font-size:16px;">' : '')
       + '<div id="st-toast" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(17,20,25,.55);backdrop-filter:blur(3px);z-index:5;">'
       +   '<div id="st-toast-inner" style="text-align:center;animation:stpop .3s ease both;">'
       +     '<div id="st-toast-stars" style="font-size:64px;"></div>'
@@ -479,13 +489,14 @@
       fingers: document.getElementById('st-fingers'),
       flag: document.getElementById('st-flag'),
       ghost: document.getElementById('st-ghost'),
+      input: document.getElementById('st-input'),
       bulbs: []
     };
     for (var bi = 0; bi < 5; bi++) {
       refs.bulbs[bi] = [document.getElementById('st-bulb-' + bi + '-0'), document.getElementById('st-bulb-' + bi + '-1')];
     }
     toastShown = false;
-    if (state.showKb) buildKeyboard();
+    if (state.showKb && !TOUCH) buildKeyboard();
   }
 
   function buildKeyboard() {
@@ -554,7 +565,8 @@
       var status = i < pos ? 'done' : (i === pos ? 'current' : 'todo');
       if (i === pos && wrong) status = 'wrong';
       var ce = charEls[i];
-      ce.el.setAttribute('style', ce.isSpace ? spaceStyle(status) : charStyle(status));
+      if (TOUCH && !ce.isSpace && status === 'current') ce.el.setAttribute('style', charStyleHand(sent[i]));
+      else ce.el.setAttribute('style', ce.isSpace ? spaceStyle(status) : charStyle(status));
     }
     var pct = Math.round((pos / sent.length) * 100);
     refs.car.style.left = 'calc(' + Math.min(pct, 94) + '% )'; // 94% keeps the car visible on the line at all widths
@@ -727,16 +739,14 @@
     }
   }
 
-  // ---- game logic (ported verbatim) ----
-  function onKey(e) {
+  // ---- game logic ----
+  function typeChar(ch) { // shared by physical keyboard (desktop) and the device keyboard (touch)
     if (state.screen !== 'play' || state.advancing || state.countdown) return;
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === ' ' || e.key === 'Backspace' || e.key === 'Tab' || e.key === '/' || e.key === "'") e.preventDefault();
-    if (e.key.length !== 1) return;
+    if (typeof ch !== 'string' || ch.length !== 1) return;
     var sent = cur();
     if (state.pos >= sent.length) return;
     var expected = sent[state.pos];
-    if (e.key === expected) {
+    if (ch === expected) {
       var started = state.started, startTime = state.startTime;
       if (!started) { started = true; startTime = Date.now(); }
       var pos = state.pos + 1;
@@ -753,6 +763,21 @@
       clearTimeout(_wt);
       _wt = setTimeout(function () { setState({ wrong: false }); }, 170);
     }
+  }
+
+  function onKey(e) { // physical keyboard
+    if (state.screen !== 'play' || state.advancing || state.countdown) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === ' ' || e.key === 'Backspace' || e.key === 'Tab' || e.key === '/' || e.key === "'") e.preventDefault();
+    if (e.key.length !== 1) return;
+    typeChar(e.key);
+  }
+
+  function onInput(e) { // device (on-screen) keyboard on touch — read typed chars, then clear the field
+    if (!e.target || e.target.id !== 'st-input') return;
+    var v = e.target.value || '';
+    for (var i = 0; i < v.length; i++) typeChar(v[i]);
+    e.target.value = '';
   }
 
   function finishSentence(startTime) {
@@ -852,13 +877,14 @@
     var a = ac(); if (a && a.state === 'suspended') a.resume(); // unlock/resume audio inside the click gesture
     state.runMisses = {};
     setState({ screen: 'play', level: idx, sub: 0, pos: 0, errors: 0, started: false, startTime: null, results: [], advancing: false, toast: null, wrong: false, scoreSaved: false, newRank: -1, countdown: true, resetLevel: -1 });
+    if (TOUCH && refs.input) { refs.input.value = ''; try { refs.input.focus(); } catch (e) {} } // bring up the device keyboard
     runCountdown();
   }
 
   // ---- input wiring ----
   app.addEventListener('click', function (e) {
     var t = e.target.closest('[data-action]');
-    if (!t) return;
+    if (!t) { if (TOUCH && state.screen === 'play' && refs.input) { try { refs.input.focus(); } catch (err) {} } return; }
     var a = t.getAttribute('data-action');
     if (a === 'play') {
       var i = +t.getAttribute('data-idx');
@@ -897,6 +923,7 @@
   });
 
   window.addEventListener('keydown', onKey);
+  app.addEventListener('input', onInput); // touch devices: capture the on-screen keyboard
 
   setInterval(function () {
     if (state.screen === 'play' && state.started && !state.advancing) syncStats();
