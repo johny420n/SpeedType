@@ -298,7 +298,7 @@
     if (RIGHT_KEYS[id]) return 'right';
     return null;
   }
-  function keyStyle(id, wide, hot, home) {
+  function keyStyle(id, wide, hot, home, preview) {
     var s = "display:flex;align-items:center;justify-content:center;height:clamp(34px,4.8vw,50px);min-width:clamp(30px,3.6vw,46px);padding:0 8px;border-radius:9px;font-family:Fredoka,sans-serif;font-weight:600;font-size:clamp(12px,1.4vw,17px);border:1px solid #333a46;box-shadow:0 2px 0 #15181f;transition:all .07s;";
     if (wide) s += "min-width:" + (wide * 46) + "px;";
     var h = hand(id);
@@ -311,6 +311,11 @@
       var anchor = (home === 'anchor') ? "border-bottom:4px solid #fff;" : "";
       if (h === 'left')  return s + "background:linear-gradient(180deg,#ff6b63,#ff4438);color:#fff;border-color:#ff5247;box-shadow:0 0 13px rgba(255,68,56,.55),0 2px 0 #9e1a13;" + anchor;
       if (h === 'right') return s + "background:linear-gradient(180deg,#5aa9ff,#2b8bff);color:#fff;border-color:#4aa3ff;box-shadow:0 0 13px rgba(43,139,255,.55),0 2px 0 #14509e;" + anchor;
+    }
+    if (preview) { // the key AFTER the current one — faint outline so it's visible but not distracting
+      if (h === 'left')  return s + "background:#2a2025;color:#e0928d;border-color:#ff5247;box-shadow:0 0 0 1.5px rgba(255,82,71,.45);";
+      if (h === 'right') return s + "background:#1f2530;color:#86b5e4;border-color:#4aa3ff;box-shadow:0 0 0 1.5px rgba(74,163,255,.45);";
+      return s + "background:#262b35;color:#aab2c0;border-color:#5a6472;box-shadow:0 0 0 1.5px rgba(150,160,175,.4);";
     }
     // idle keys keep a soft hand tint so the left/right split is always visible
     if (h === 'left')  return s + "background:#2a2025;color:#e0928d;border-color:#623a3e;";
@@ -615,13 +620,15 @@
     } else {
       var next = keyInfo(sent[pos]);
       var nextHand = hand(next.id);
+      var after = keyInfo(sent[pos + 1]); // the key after the current one, shown as a faint outline
       for (var j = 0; j < keyEls.length; j++) {
         var k = keyEls[j];
         var hot;
         if (k.id === 'lshift') hot = next.shift && nextHand === 'right'; // right-hand char -> press LEFT shift
         else if (k.id === 'rshift') hot = next.shift && nextHand === 'left'; // left-hand char -> press RIGHT shift
         else hot = (k.id === next.id);
-        k.el.setAttribute('style', keyStyle(k.id, k.wide, hot));
+        var preview = !hot && !!after.id && k.id === after.id; // upcoming key (not its shift)
+        k.el.setAttribute('style', keyStyle(k.id, k.wide, hot, false, preview));
       }
     }
 
